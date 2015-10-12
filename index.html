@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css">
+        <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+        <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js"></script>
+        <!--<link rel="stylesheet" href="jquery.mobile-1.1.0.custom.css?" />-->
+        <script>
+            var tmp = {};
+            
+            /** Read the new task and add it to the list */
+            tmp.add = function(event) {
+                // Read the task from the input
+                var task=$('input').val();
+                if (task) {
+                    // Add the task to array and refresh list
+                    tmp.list[tmp.list.length] = task;
+                    tmp.refresh_list();
+                    // Clear the input
+                    $('input').val('');
+                }
+            };
+                                    
+            /** Remove the task which was marked as selected */
+            tmp.remove = function() {
+                // Remove from array and refresh list
+                tmp.list.splice(tmp.selected,1);
+                tmp.refresh_list();
+            };
+                    
+            /** Recreate the entire list from the available list of tasks */
+            tmp.refresh_list = function() {
+                var $tasks = $('#task_list'), i;
+                // Clear the existing task list
+                $tasks.empty();
+                if (tmp.list.length) {
+                    // Add the header
+                    $tasks.append('<li data-role="list-divider">Not To Do&#39;s</li>');
+                    for (var i=0;i<tmp.list.length;i++){
+                        // Append each task
+                        var li = '<li><a id="item' + i +'" data-task="' + i
+                                + '" href="#edit">' + tmp.list[i] + '</a></li>'
+                        $tasks.append(li);
+                    }
+                    /**
+                    This part enables the "edit" page to show as a pop up / dialog window
+                     for (var i=0;i<tmp.list.length;i++){
+                        // Append each task
+                        var li = '<li><a data-rel="dialog"id="item' + i +'" data-task="' + i
+                                + '" href="#edit">' + tmp.list[i] + '</a></li>'
+                        $tasks.append(li);
+                    }
+                    */
+                }
+                // Add the header for addition of new tasks
+                $tasks.append('<li data-role="list-divider">Add a task</li>');
+                // Use jQuery Mobile's listview method to refresh
+                $tasks.listview('refresh');
+                // Store back the list
+                localStorage.tmp_list = JSON.stringify(tmp.list || []);
+            };
+            
+            /** Initialize the index page */
+            $(document).delegate('#index','pageinit', function() {
+                // If no list is already present, initialize it
+                if (!localStorage.tmp_list) {
+                    localStorage.tmp_list = "[]";
+                }
+                // Load the list by parsing the JSON from localStorage
+                tmp.list = JSON.parse(localStorage.tmp_list);
+                $('#add').bind('vclick', tmp.add);
+                $('li a').live('vclick', function() {
+                    tmp.selected = $(this).data('task');
+                });
+                // Refresh the list everytime the page is reloaded
+                $('#index').bind('pagebeforeshow', tmp.refresh_list);
+            });
+        
+            /** Fetch the clicked item id and text and save it in an object */
+            $(document).on('pagebeforeshow', '#index', function(){       
+                $('#task_list li a').each(function(){
+                    //Get the id and text
+                    var elementID = $(this).attr('id');
+                    var text = $(this).text();
+                    $(document).on('click', '#'+elementID, function(event){  
+                        if(event.handled !== true) // This will prevent event triggering more then once
+                        {
+                            listObject.itemText = text; 
+                            event.handled = true;
+                        }              
+                    });
+                });
+            });
+            
+            /** Set the input field to equal our item (edit text) */
+            $(document).on('pagebeforeshow', '#edit', function(){       
+                $('input[name=editText]').val(listObject.itemText);
+            });
+            
+            /** Object used to store our value (text) */
+            var listObject = {
+                itemText : null
+            }
+                        
+            // Bind the "Delete" button to the remove function
+            $(document).delegate('#edit', 'pageinit', function(){
+                $('.remove_task').bind('vclick', tmp.remove);
+            });
+        </script>
+    </head>
+    <body>
+        <div id="index" data-url="index" data-role="page">
+            <div data-role="header" data-position="fixed">
+                <h1>To Do List</h1>
+            </div>
+            <div role="main" class="ui-content" data-role="content">
+                <ul class="ui-listview" id="task_list" data-role="listview">
+                    <role="heading" data-role="list-divider">To Do's</li>
+                    <li data-role="list-divider">To Do's</li>
+                        <li><a class="show_edit" id="item1" href="#edit" >Testing</a></li>
+                        <li><a class="show_edit" id="item2" href="#edit" >Test</a></li>
+                    <li role="heading" data-role="list-divider">Add To Do</li>
+                </ul>
+                <form id="form" method="GET">
+                    <div data-role="fieldcontain">
+                        <label for="form"></label>
+                        <input type="text" name="inp_tw14" id="form" value="Enter a new To Do..."/>
+                    </div>
+                    <input id="add" type="button" data-icon="plus" value="Add Item"/>
+                </form>
+            </div>
+        </div>
+        </div></div>
+        
+        <div id="edit" data-url="edit" data-role="page">
+        <div data-role="header" data-position="fixed">
+            <h1>Edit Item</h1>
+        </div>
+        
+        <div data-role="content">    
+            <ul data-role="listview">
+                <li data-role="list-divider">To Do</li>
+            </ul>
+        
+	        <div data-role="fieldcontain">
+	            <input type="text" name="editText" id="editText" value="Edit Description..."/>
+	        </div>
+	        
+	        <a class="cornfirm_edit" href="#index" data-role="button" data-icon="check" data-inline="true">Confirm</a>
+	        <a class="cancel_edit" href="#index" data-role="button" data-icon="minus" data-inline="true">Cancel</a>
+	        
+	        <br><br><br>
+	        
+	        <a class="remove_task" href="#index" data-role="button" data-icon="delete">Delete</a>
+	        
+        </div></div>
+        
+    </body>
+</html>
